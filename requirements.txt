@@ -1,0 +1,5 @@
+Flask==0.12.2
+Flask_HTTPAuth==3.2.3
+flask_migrate==2.1.1
+flask_sqlalchemy==2.3.2
+passlib==1.7.1
