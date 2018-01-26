@@ -8,10 +8,36 @@ $( document ).ready(function () {
         alignment: 'left', // Displays dropdown with edge aligned to the left of button
     });
 
+    load_unregistered_table();
+    load_registered_table();
+});
+
+function load_unregistered_table() {
+    var arr = ['Name', 'Email ID', 'RFID Number'];
+    for(var i = 0; i < arr.length; i++) {
+        var grid = document.createElement('h3');
+        grid.className = "users-not-approved-grid-item flow-text";
+        grid.setAttribute('id', arr[i]);
+        grid.innerText = arr[i];
+        $('#users_not_approved').append(grid);
+    }
     load_users('no_rfid_number');
+
+}
+
+function load_registered_table() {
+    var arr = ['Name', 'Email ID', 'RFID Number']
+    for(var i = 0; i < arr.length; i++) {
+        var grid = document.createElement('h3');
+        grid.className = "users-approved-grid-item flow-text";
+        grid.setAttribute('id', arr[i]);
+        grid.innerText = arr[i];
+        $('#users_approved').append(grid);
+    }
     load_users('rfid_number');
 
-});
+}
+
 
 function load_users(rfid_status) {
     var response = '';
@@ -32,7 +58,7 @@ function load_users(rfid_status) {
         error: function (error) {
             console.log(error);
         }
-    }).responseText;
+    });
 }
 
 function load_unregistered_users(text) {
@@ -41,20 +67,43 @@ function load_unregistered_users(text) {
     for (var i = 0; i < text.length; i ++) {
 
         // document.write(text);
-        user_detail = text[i].toString().split(',')
-        for (var j = 0; j < user_detail.length; j ++) {
-            if (user_detail[j] == '') {
-                document.write('Empty');
+        user_detail = text[i]
+        // Name -> 1, Email ID  -> 2, RFID Number -> 4
+        var arr = [1, 2, 4]
+
+        for (var j = 0; j < arr.length; j ++) {
+            var grid = document.createElement('div');
+            if (user_detail[arr[j]] == '' || user_detail[arr[j]] == null) {
+                user_detail[arr[j]] = '<i class="small material-icons">create</i>';
+                grid.onclick('')
             }
-            else {
-                document.write(user_detail[j]);
-            }
-            document.write("|");
+            grid.className = "users-not-approved-grid-item flow-text";
+            // grid.setAttribute('id', j);
+            grid.innerHTML = user_detail[arr[j]];
+            $('#users_not_approved').append(grid);
         }
-        document.write("\n|||");
     }
 }
 
 function load_registered_users(text) {
-    // document.write(text);
+    console.log(text);
+    text = JSON.parse(text);
+    for (var i = 0; i < text.length; i ++) {
+
+        // document.write(text);
+        user_detail = text[i]
+        // Name -> 1, Email ID  -> 2, RFID Number -> 4
+        var arr = [1, 2, 4]
+
+        for (var j = 0; j < arr.length; j ++) {
+            if (user_detail[arr[j]] == '') {
+                user_detail[arr[j]] = 'None'
+            }
+            var grid = document.createElement('div');
+            grid.className = "users-approved-grid-item flow-text";
+            grid.setAttribute('id', user_detail[arr[j]]);
+            grid.innerText = user_detail[arr[j]];
+            $('#users_approved').append(grid);
+        }
+    }
 }

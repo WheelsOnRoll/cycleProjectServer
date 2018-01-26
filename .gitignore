@@ -1,12 +1,14 @@
+# Project Files
+cycle-project/
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-cycle-project/
 
 # C extensions
 *.so
-
 # Distribution / packaging
 .Python
 build/

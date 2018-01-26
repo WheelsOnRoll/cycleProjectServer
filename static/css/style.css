@@ -2,8 +2,36 @@ body {
     display: flex;
     min-height: 100vh;
     flex-direction: column;
-  }
+}
 
-  main {
+main {
     flex: 1 0 auto;
-  }
+}
+
+.users-not-approved-container {
+  display: grid;
+  grid-template-columns: auto auto auto;
+}
+
+.users-not-approved-grid-item {
+  background-color: white;
+  /* background-color: rgba(255, 255, 255, 0.8); */
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  font-size: 20px;
+  text-align: center;
+}
+
+.users-approved-container {
+  display: grid;
+  grid-template-columns: auto auto auto;
+}
+
+.users-approved-grid-item {
+  background-color: white;
+  /* background-color: rgba(255, 255, 255, 0.8); */
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  font-size: 20px;
+  text-align: center;
+}

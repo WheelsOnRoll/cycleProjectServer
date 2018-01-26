@@ -11,10 +11,11 @@
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/js/materialize.min.js"></script>    
     <script type="text/javascript" src="/static/js/script.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <header>
-        <nav class="orange">
+        <nav class="blue">
             <div class="nav-wrapper">
                 <a href="https://nitk.ac.in" class="brand-logo right">
 
@@ -38,7 +39,7 @@
     </header>
 
     <main>
-        <!-- TV -->
+        <!-- Not Approved Users -->
         <div class="container">
             <h2 class="flow-text"> Users Not Approved</h2>
 
@@ -46,9 +47,20 @@
             </div>
         </div>
 
+        <!-- Approved Users -->
+        <div class="container">
+            <h2 class="flow-text"> Users Approved</h2>
+
+            <div class="users-approved-container center" id="users_approved">
+            </div>
+        </div>
+
     </main>
-<br><br>
-<footer class="page-footer orange">
+
+    <br><br>
+    <hr>
+
+    <footer class="page-footer blue">
     <div class="container">
         <div class="row">
             <div class="col l6 s12">
