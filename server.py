@@ -1,14 +1,14 @@
+from gevent import monkey
 import json
 from flask import Flask, request, Response, render_template, abort, url_for
-from flask_httpauth import HTTPDigestAuth
-from flask_migrate import Migrate
 import sqlite3
 import gevent
-import time
 from flask_httpauth import HTTPDigestAuth
 
 # Flask Variables
 app = Flask(__name__)
+monkey.patch_all()
+
 auth = HTTPDigestAuth()
 
 app.config['SECRET_KEY'] = 'Cycle Project Mentor: Akshay Revankar'
@@ -27,6 +27,7 @@ users = {
 
 # Helper Methods
 def event_stream(cycle_id):
+    print(cycle_id)
     while True:
         # database query
         db = sqlite3.connect("file::memory:?cache=shared")
@@ -47,6 +48,16 @@ def event_stream(cycle_id):
             cur.execute("SELECT * FROM users WHERE id = ? ", id)
             user = cur.fetchone()
             rfid_no = user[4]
+
+            # Send Event Stream
+            event = raw_input("Event: ")
+            # data = raw_input("Data: ")
+            if event == 'user_request':
+                data = '{"rfid":123, "ride_id":1}'
+            elif event == 'post_ride':
+                data = raw_input("Data : ")
+                data = '{"status": {0}}'.format(data)
+            yield 'event: {0}\ndata: {1}\n\n'.format(event, data)
 
             # yield rfid and ride id
             yield 'event: user_request\ndata: %s\n\n' % json.dumps({"ride_id":ride_id, "rfid":rfid_no})
@@ -154,8 +165,8 @@ def register_user():
 
 @app.route('/events')
 def sse_request():
-	# Set response method to event-stream
-    return Response(event_stream(request.args.get('cycle_id', '')), mimetype='text/event-stream')
+    # Set response method to event-stream
+    return Response(event_stream(request.form.get('id', '')), mimetype='text/event-stream')
 
 """
 Web App Code ~ SS ~
@@ -189,8 +200,6 @@ def get_pw(username):
 @auth.login_required
 def index():
     return render_template('index.html', name='Cycle Project')
-
-
 
 # Main Method in the Server code
 if __name__ == '__main__':
