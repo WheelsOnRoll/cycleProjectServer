@@ -30,64 +30,100 @@ def event_stream(cycle_id):
     print(cycle_id)
     while True:
         # database query
-        db = sqlite3.connect("file::memory:?cache=shared")
+        db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
         cur = db.cursor()
 
         # Query to get user rfid number
-        id = (cycle_id,)
+        id = (cycle_id, 0)
         # TODO: Revisit this logic later
-        cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
-        ride = cur.fetchall()
+        # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
+        cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+        ride = cur.fetchone()
+
+        print(ride)
 
         # when there is new entry with current id
-        if ride is not None:
+        if ride != None:
             ride_id = ride[0]
             # Query to get user rfid number
-            id = (ride[2],)
-            # TODO: Revisit this logic later
-            cur.execute("SELECT * FROM users WHERE id = ? ", id)
+            user_id = int(ride[2])
+
+            user_id = (user_id, )
+            # # TODO: Revisit this logic later
+            cur.execute("SELECT * FROM users WHERE id = ? ", user_id)
             user = cur.fetchone()
             rfid_no = user[4]
 
-            # Send Event Stream
-            event = raw_input("Event: ")
-            # data = raw_input("Data: ")
-            if event == 'user_request':
-                data = '{"rfid":123, "ride_id":1}'
-            elif event == 'post_ride':
-                data = raw_input("Data : ")
-                data = '{"status": {0}}'.format(data)
-            yield 'event: {0}\ndata: {1}\n\n'.format(event, data)
+            print(user)
 
+            # TODO: store the ride id as var
+
+            # Send Event Stream
             # yield rfid and ride id
             yield 'event: user_request\ndata: %s\n\n' % json.dumps({"ride_id":ride_id, "rfid":rfid_no})
+            continue
+
+        # TODO: Check if ride id is finished
+        # Loop until:
+        # 1. timeout -or-
+        # 2. user reinitiated the ride status
+        # And send corresponding event at event = 'post_ride'
+        # and status = 'continue' -or- 'stop' -or- 'timeout'
+        count = 0
+        ride_status = True
+        while count < 600 or ride_status:
+            db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
+            cur = db.cursor()
+
+            # Query to get user rfid number
+            id = (cycle_id, 1)
+
+            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+            ride = cur.fetchone()
+
+            # If user wants to continue the ride
+            if ride:
+                yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "continue"})
+            else:
+                pass
+            
+            id = (ride_id, 2)
+
+            cur.execute("SELECT * FROM rides WHERE ride_id = ? and status = ?", id)
+            ride = cur.fetchone()
+
+            # If user wants to continue the ride
+            if ride:
+                yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "stop"})
+            else:
+                pass
+
+            gevent.sleep(1)
+            count += 1 
+
+        yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "timeout"})
 
         # Every 1 second query database if new ride with tho
+        db.close()
         gevent.sleep(1)
 
 """
 Android Code ~ SS ~
 """
-
-@app.route('/red_to_yellow')
-def sse_request():
-    # Set response method to event-stream
-    return Response(event_stream(), mimetype='text/event-stream')
-
 @app.route('/qr_code_receive', methods=['POST'])
 def qr_code():
     print(str(json.dumps(request.json)))
     email = request.json['email']
-    cycle_id = request.json['cycle_id']
-
-    db = sqlite3.connect("file::memory:?cache=shared")
+    cycle_id = int(request.json['cycle_id'])
+    
+    db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
     cur = db.cursor()
 
     # Query to get user rfid number
     email_id = (email,)
     cur.execute("SELECT * FROM users WHERE email = ? ",email_id)
     user = cur.fetchone()
-    user_id = user[0]
+    user_id = int(user[0])
 
     if user == None:
         return json.dumps({'success': False, 'message': 'Kill App Programmer'})
@@ -101,12 +137,16 @@ def qr_code():
 
     rfid_number = user[4]
 
+    print(type(cycle_id[0]))
+    print(type(user_id))
+    print((cycle_id[0]))
+    print((user_id))
+
+
     # Query to get user rfid number
-    ride = (user_id, cycle_id,)
-    cur.execute("INSERT INTO rides('cycle_id, user_id') VALUES(?, ?) ",ride)
-
-
-    Response(event_stream(), mimetype='text/event-stream')
+    ride = (user_id, cycle_id[0],)
+    cur.execute("INSERT INTO rides('user_id', 'cycle_id') VALUES(?, ?) ",ride)
+    db.commit()
 
     # current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     # ride = [(cycle_id, user_id, current_time)]
@@ -129,7 +169,7 @@ def login():
     email = request.json['email']
     password = request.json['password']
 
-    db = sqlite3.connect("file::memory:?cache=shared")
+    db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
     cur = db.cursor()
 
     email_id = (email,)
@@ -154,7 +194,7 @@ def register_user():
     email = request.json['email']
     password = request.json['password']
 
-    db = sqlite3.connect("file::memory:?cache=shared")
+    db = sqlite3.connect("file::memory:?cache=shared",  check_same_thread=False)
     cur = db.cursor()
 
     user_record = (name, email, password)
@@ -162,6 +202,45 @@ def register_user():
     db.commit()
 
     return json.dumps({'success': True, 'message': 'Kindly contact administrator for Card to login'})
+
+# Code to start ride by users
+@app.route('/startride', methods=['POST'])
+def start_ride():
+    # print(str((request.form))+'Hrishi Data')
+
+    status = request.form.get('status')
+    ride_id = request.form.get('ride_id')
+
+    if status == 'Accepted':
+        db = sqlite3.connect("file::memory:?cache=shared",
+                            check_same_thread=False)
+        cur = db.cursor()
+        ride = (1, ride_id,)
+        cur.execute("UPDATE rides SET status = ? WHERE id = ?", ride)
+        db.commit()
+
+        return json.dumps({'status': 'success'})
+    # TODO: Mobile Logic will be done later
+    elif status=='Rejected':
+        return json.dumps({'status': 'failure'})
+    return json.dumps({'status': 'failure'})
+
+@app.route('/stopride', methods=['POST'])
+def stop_ride():
+    print(str((request.form)) + 'Hrishi Data')
+
+    ride_id = request.form.get('ride_id')
+    # cycle_id = request.form.get('cycle_id')
+
+    db = sqlite3.connect("file::memory:?cache=shared",
+                            check_same_thread=False)
+    cur = db.cursor()
+    ride = (2, ride_id,)
+    cur.execute("UPDATE rides SET status = ? WHERE id = ?", ride)
+    db.commit()
+
+    return json.dumps({'status': 'success'})
+
 
 @app.route('/events')
 def sse_request():
@@ -177,7 +256,7 @@ Web App Code ~ SS ~
 def load_users():
     data = request.json['data']
 
-    db = sqlite3.connect("file::memory:?cache=shared")
+    db = sqlite3.connect("file::memory:?cache=shared",  check_same_thread=False)
     cur = db.cursor()
 
     if data == "no_rfid_number":
@@ -204,4 +283,4 @@ def index():
 # Main Method in the Server code
 if __name__ == '__main__':
     # Set server address 0.0.0.0:5000/
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
