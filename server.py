@@ -27,7 +27,7 @@ users = {
 
 
 # Helper Methods
-def event_stream(cycle_id):
+def event_stream(cycle_id, ride_id):
     print(cycle_id)
     try:
         while True:
@@ -36,10 +36,10 @@ def event_stream(cycle_id):
             cur = db.cursor()
 
             # Query to get user rfid number
-            id = (cycle_id, 0)
+            id = (cycle_id, ride_id, 0)
             # TODO: Revisit this logic later
             # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
-            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and ride_id = ? and status = ?", id)
             ride = cur.fetchone()
 
             print("Init ride", ride)
@@ -73,10 +73,10 @@ def event_stream(cycle_id):
             # and status = 'continue' -or- 'stop' -or- 'timeout'
 
             # Query to get user rfid number
-            id = (cycle_id)
+            id = (cycle_id, ride_id)
             # TODO: Revisit this logic later
             # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
-            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 2 or status = 3", id)
+            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and ride_id = ? and status = 2 or status = 3", id)
             ride = cur.fetchone()
 
             print("Running ride", ride)
@@ -89,9 +89,9 @@ def event_stream(cycle_id):
                     cur = db.cursor()
 
                     # Query to get user rfid number
-                    id = (cycle_id, 3)
+                    id = (cycle_id, ride_id, 3)
 
-                    cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+                    cur.execute("SELECT * FROM rides WHERE cycle_id = ? and ride_id = ? and status = ?", id)
                     ride = cur.fetchone()
 
                     # If user wants to continue the ride
@@ -101,9 +101,9 @@ def event_stream(cycle_id):
                     else:
                         pass
                     
-                    id = (cycle_id, -1)
+                    id = (cycle_id, ride_id, -1)
 
-                    cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+                    cur.execute("SELECT * FROM rides WHERE cycle_id = ? and ride_id = ? and status = ?", id)
                     ride = cur.fetchone()
 
                     # If user wants to stop the ride
@@ -116,7 +116,7 @@ def event_stream(cycle_id):
                     count += 1 
 
                 yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "timeout"})
-                cur.execute("UPDATE rides SET status = 0 WHERE cycle_id = ? and status = 2 or status = 3", (cycle_id))
+                cur.execute("UPDATE rides SET status = 0 WHERE cycle_id = ? and ride_id = ? and status = 2 or status = 3", (cycle_id, ride_id))
 
             # Every 1 second query database if new ride with tho
             db.close()
@@ -268,7 +268,7 @@ def stop_ride():
 @app.route('/events')
 def sse_request():
     # Set response method to event-stream
-    return Response(event_stream(request.form.get('id', '')), mimetype='text/event-stream')
+    return Response(event_stream(request.form.get('id', 'ride_id' ,'')), mimetype='text/event-stream')
 
 
 @app.route('/start_ride_polling', methods=['POST'])
