@@ -284,6 +284,21 @@ def start_ride_polling():
         return json.dumps({'success': True})
         
     return json.dumps({'success': False})
+
+@app.route('/stop_ride_polling', methods=['POST'])
+def stop_ride_polling():
+    ride_id = request.json['ride_id']
+    db = sqlite3.connect("file::memory:?cache=shared",
+                            check_same_thread=False)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM rides where ride_id = ? AND status != 1", (cycle_id))
+    ride = cur.fetchone()
+    if ride:
+        return json.dumps({'success': True})
+        
+    return json.dumps({'success': False})    
+
+
 """
 Web App Code ~ SS ~
 """
