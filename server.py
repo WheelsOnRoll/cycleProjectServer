@@ -27,8 +27,9 @@ users = {
 
 
 # Helper Methods
-def event_stream(cycle_id, ride_id):
-    print(cycle_id)
+def event_stream(cycle_id):
+    print("event stream request from cycle ", cycle_id)
+    ride_id = None
     try:
         while True:
             # database query
@@ -36,13 +37,13 @@ def event_stream(cycle_id, ride_id):
             cur = db.cursor()
 
             # Query to get user rfid number
-            id = (cycle_id, ride_id, 0)
+            id = (cycle_id, 0)
             # TODO: Revisit this logic later
             # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
-            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and ride_id = ? and status = ?", id)
+            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
             ride = cur.fetchone()
 
-            print("Init ride", ride)
+            # print("Init ride", ride)
 
             # when there is new entry with current id
             if ride != None:
@@ -56,13 +57,17 @@ def event_stream(cycle_id, ride_id):
                 user = cur.fetchone()
                 rfid_no = user[4]
 
-                print(user)
+                # print(user)
 
                 # TODO: store the ride id as var
 
                 # Send Event Stream
                 # yield rfid and ride id
                 yield 'event: user_request\ndata: %s\n\n' % json.dumps({"ride_id":ride_id, "rfid":rfid_no})
+                continue
+
+            if ride_id is None:
+                gevent.sleep(1)
                 continue
 
             # TODO: Check if ride id is finished
@@ -79,7 +84,7 @@ def event_stream(cycle_id, ride_id):
             cur.execute("SELECT * FROM rides WHERE cycle_id = ? and ride_id = ? and status = 2 or status = 3", id)
             ride = cur.fetchone()
 
-            print("Running ride", ride)
+            # print("Running ride", ride)
 
             if ride != None:
                 count = 0
@@ -122,7 +127,8 @@ def event_stream(cycle_id, ride_id):
             db.close()
             gevent.sleep(1)
 
-    except:
+    except Exception as e:
+        print(e)
         pass
 
 """
@@ -130,7 +136,7 @@ Android Code ~ SS ~
 """
 @app.route('/qr_code_receive', methods=['POST'])
 def qr_code():
-    print(str(json.dumps(request.json)))
+    # print(str(json.dumps(request.json)))
     email = request.json['email']
     cycle_id = int(request.json['cycle_id'])
     
@@ -154,11 +160,6 @@ def qr_code():
         return json.dumps({'success': False, 'message': 'QR Code is wrong'})
 
     rfid_number = user[4]
-
-    print(type(cycle_idi[0]))
-    print(type(user_id))
-    print((cycle_idi[0]))
-    print((user_id))
 
 
     # Query to get user rfid number
@@ -188,7 +189,7 @@ def assign_rfid_to_user():
 @app.route('/login', methods=['POST'])
 def login():
     # Evaluate Post Parameters from Login
-    print(str(json.dumps(request.json)))
+    # print(str(json.dumps(request.json)))
     email = request.json['email']
     password = request.json['password']
 
@@ -199,7 +200,7 @@ def login():
 
     cur = cur.execute("SELECT * FROM users WHERE email = ? and rfid_no IS NOT NULL",email_id)
     user = cur.fetchone()
-    print(user)
+    # print(user)
     if user is None:
         return json.dumps({'success': False, 'message': 'Get your Smart Cycle Card'})
 
@@ -212,7 +213,7 @@ def login():
 @app.route('/register', methods=['POST'])
 def register_user():
     # Evaluate POST Parameters from Register
-    print(str(json.dumps(request.json)))
+    # print(str(json.dumps(request.json)))
     name = request.json['username']
     email = request.json['email']
     password = request.json['password']
@@ -250,7 +251,7 @@ def start_ride():
 
 @app.route('/stopride', methods=['POST'])
 def stop_ride():
-    print(str((request.form)) + 'Hrishi Data')
+    # print(str((request.form)) + 'Hrishi Data')
 
     ride_id = request.form.get('ride_id')
     # cycle_id = request.form.get('cycle_id')
@@ -268,17 +269,17 @@ def stop_ride():
 @app.route('/events')
 def sse_request():
     # Set response method to event-stream
-    return Response(event_stream(request.form.get('id', 'ride_id' ,'')), mimetype='text/event-stream')
+    return Response(event_stream(request.form.get('id' ,'')), mimetype='text/event-stream')
 
 
 @app.route('/start_ride_polling', methods=['POST'])
 def start_ride_polling():
-    email = request.json['email']
-    cycle_id = request.json['cycle_id']
+    # print(request.json)
+    ride_id = request.json['ride_id']
     db = sqlite3.connect("file::memory:?cache=shared",
                             check_same_thread=False)
     cur = db.cursor()
-    cur.execute("SELECT * FROM rides where cycle_id = ? AND status = 1", (cycle_id))
+    cur.execute("SELECT * FROM rides where id = ? and status = 1", (ride_id, ))
     ride = cur.fetchone()
     if ride:
         return json.dumps({'success': True})
@@ -291,7 +292,7 @@ def stop_ride_polling():
     db = sqlite3.connect("file::memory:?cache=shared",
                             check_same_thread=False)
     cur = db.cursor()
-    cur.execute("SELECT * FROM rides where ride_id = ? AND status != 1", (cycle_id))
+    cur.execute("SELECT * FROM rides where id = ? AND status != 1", (ride_id, ))
     ride = cur.fetchone()
     if ride:
         return json.dumps({'success': True})
