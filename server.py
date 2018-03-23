@@ -4,6 +4,7 @@ from flask import Flask, request, Response, render_template, abort, url_for
 import sqlite3
 import gevent
 from flask_httpauth import HTTPDigestAuth
+import time
 
 # Flask Variables
 app = Flask(__name__)
@@ -28,84 +29,101 @@ users = {
 # Helper Methods
 def event_stream(cycle_id):
     print(cycle_id)
-    while True:
-        # database query
-        db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
-        cur = db.cursor()
-
-        # Query to get user rfid number
-        id = (cycle_id, 0)
-        # TODO: Revisit this logic later
-        # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
-        cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
-        ride = cur.fetchone()
-
-        print(ride)
-
-        # when there is new entry with current id
-        if ride != None:
-            ride_id = ride[0]
-            # Query to get user rfid number
-            user_id = int(ride[2])
-
-            user_id = (user_id, )
-            # # TODO: Revisit this logic later
-            cur.execute("SELECT * FROM users WHERE id = ? ", user_id)
-            user = cur.fetchone()
-            rfid_no = user[4]
-
-            print(user)
-
-            # TODO: store the ride id as var
-
-            # Send Event Stream
-            # yield rfid and ride id
-            yield 'event: user_request\ndata: %s\n\n' % json.dumps({"ride_id":ride_id, "rfid":rfid_no})
-            continue
-
-        # TODO: Check if ride id is finished
-        # Loop until:
-        # 1. timeout -or-
-        # 2. user reinitiated the ride status
-        # And send corresponding event at event = 'post_ride'
-        # and status = 'continue' -or- 'stop' -or- 'timeout'
-        count = 0
-        ride_status = True
-        while count < 600 or ride_status:
+    try:
+        while True:
+            # database query
             db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
             cur = db.cursor()
 
             # Query to get user rfid number
-            id = (cycle_id, 1)
-
+            id = (cycle_id, 0)
+            # TODO: Revisit this logic later
+            # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
             cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
             ride = cur.fetchone()
 
-            # If user wants to continue the ride
-            if ride:
-                yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "continue"})
-            else:
-                pass
-            
-            id = (ride_id, 2)
+            print("Init ride", ride)
 
-            cur.execute("SELECT * FROM rides WHERE ride_id = ? and status = ?", id)
+            # when there is new entry with current id
+            if ride != None:
+                ride_id = ride[0]
+                # Query to get user rfid number
+                user_id = int(ride[2])
+
+                user_id = (user_id, )
+                # # TODO: Revisit this logic later
+                cur.execute("SELECT * FROM users WHERE id = ? ", user_id)
+                user = cur.fetchone()
+                rfid_no = user[4]
+
+                print(user)
+
+                # TODO: store the ride id as var
+
+                # Send Event Stream
+                # yield rfid and ride id
+                yield 'event: user_request\ndata: %s\n\n' % json.dumps({"ride_id":ride_id, "rfid":rfid_no})
+                continue
+
+            # TODO: Check if ride id is finished
+            # Loop until:
+            # 1. timeout -or-
+            # 2. user reinitiated the ride status
+            # And send corresponding event at event = 'post_ride'
+            # and status = 'continue' -or- 'stop' -or- 'timeout'
+
+            # Query to get user rfid number
+            id = (cycle_id)
+            # TODO: Revisit this logic later
+            # cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 0 and paid = 0", id)
+            cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = 2 or status = 3", id)
             ride = cur.fetchone()
 
-            # If user wants to continue the ride
-            if ride:
-                yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "stop"})
-            else:
-                pass
+            print("Running ride", ride)
 
+            if ride != None:
+                count = 0
+                ride_status = True
+                while count < 600 or ride_status:
+                    db = sqlite3.connect("file::memory:?cache=shared", check_same_thread=False)
+                    cur = db.cursor()
+
+                    # Query to get user rfid number
+                    id = (cycle_id, 3)
+
+                    cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+                    ride = cur.fetchone()
+
+                    # If user wants to continue the ride
+                    if ride:
+                        yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "continue"})
+                        cur.execute("UPDATE rides SET status = 0 WHERE cycle_id = ? and status = ?", id)
+                    else:
+                        pass
+                    
+                    id = (cycle_id, -1)
+
+                    cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
+                    ride = cur.fetchone()
+
+                    # If user wants to stop the ride
+                    if ride:
+                        yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "stop"})
+                    else:
+                        pass
+
+                    gevent.sleep(1)
+                    count += 1 
+
+                yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "timeout"})
+                cur.execute("UPDATE rides SET status = 0 WHERE cycle_id = ? and status = 2 or status = 3", (cycle_id))
+
+            # Every 1 second query database if new ride with tho
+            db.close()
             gevent.sleep(1)
-            count += 1 
 
-        yield 'event: post_ride\ndata: %s\n\n' % json.dumps({"status": "timeout"})
-
-        # Every 1 second query database if new ride with tho
-        db.close()
-        gevent.sleep(1)
+    except:
+        pass
 
 """
 Android Code ~ SS ~
@@ -128,8 +146,8 @@ def qr_code():
     if user == None:
         return json.dumps({'success': False, 'message': 'Kill App Programmer'})
 
-    cycle_id = (cycle_id,)
-    cur.execute("SELECT * FROM cycles WHERE id = ? ",cycle_id)
+    cycle_idi = (cycle_id,)
+    cur.execute("SELECT * FROM cycles WHERE id = ? ",cycle_idi)
     cycle = cur.fetchone()
 
     if cycle == None:
@@ -137,22 +155,27 @@ def qr_code():
 
     rfid_number = user[4]
 
-    print(type(cycle_id[0]))
+    print(type(cycle_idi[0]))
     print(type(user_id))
-    print((cycle_id[0]))
+    print((cycle_idi[0]))
     print((user_id))
 
 
     # Query to get user rfid number
-    ride = (user_id, cycle_id[0],)
-    cur.execute("INSERT INTO rides('user_id', 'cycle_id') VALUES(?, ?) ",ride)
+    # ride = (user_id, cycle_id[0],)
+    # cur.execute("INSERT INTO rides('user_id', 'cycle_id') VALUES(?, ?) ",ride)
+    # db.commit()
+
+    current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    ride = (cycle_id, user_id, current_time)
+    cur.execute("INSERT INTO rides('cycle_id', 'user_id', 'start_time') VALUES(?, ?, ?) ",ride)
     db.commit()
 
-    # current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    # ride = [(cycle_id, user_id, current_time)]
-    # c.execute("INSERT INTO rides('cycle_id, user_id, start_time') VALUES(?, ?, ?) ",ride)
+    cur.execute("select * from rides where start_time = ?", (current_time,))
+    ride = cur.fetchone()
 
-    return json.dumps({'success': True})
+
+    return json.dumps({'success': True, 'ride_id': ride[0]})
 
 
 # Assign RFID to user
@@ -247,6 +270,20 @@ def sse_request():
     # Set response method to event-stream
     return Response(event_stream(request.form.get('id', '')), mimetype='text/event-stream')
 
+
+@app.route('/start_ride_polling', methods=['POST'])
+def start_ride_polling():
+    email = request.json['email']
+    cycle_id = request.json['cycle_id']
+    db = sqlite3.connect("file::memory:?cache=shared",
+                            check_same_thread=False)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM rides where cycle_id = ? AND status = 1", (cycle_id))
+    ride = cur.fetchone()
+    if ride:
+        return json.dumps({'success': True})
+        
+    return json.dumps({'success': False})
 """
 Web App Code ~ SS ~
 """
