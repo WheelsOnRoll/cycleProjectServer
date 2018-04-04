@@ -246,6 +246,12 @@ def start_ride():
         return json.dumps({'status': 'success'})
     # TODO: Mobile Logic will be done later
     elif status=='Rejected':
+        db = sqlite3.connect("file::memory:?cache=shared",
+                            check_same_thread=False)
+        cur = db.cursor()
+        ride = (-1, ride_id,)
+        cur.execute("UPDATE rides SET status = ? WHERE id = ?", ride)
+        db.commit()
         return json.dumps({'status': 'failure'})
     return json.dumps({'status': 'failure'})
 
@@ -282,8 +288,13 @@ def start_ride_polling():
     cur.execute("SELECT * FROM rides where id = ? and status = 1", (ride_id, ))
     ride = cur.fetchone()
     if ride:
-        return json.dumps({'success': True})
+        return json.dumps({'success': True, 'accepted': True})
         
+    cur.execute("SELECT * FROM rides where id = ? and status = -1", (ride_id, ))
+    ride = cur.fetchone()
+    if ride:
+        return json.dumps({'success': True, 'accepted': False})
+
     return json.dumps({'success': False})
 
 @app.route('/stop_ride_polling', methods=['POST'])
