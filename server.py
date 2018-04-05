@@ -297,14 +297,33 @@ def start_ride_polling():
 
     return json.dumps({'success': False})
 
+
 @app.route('/stop_ride_polling', methods=['POST'])
 def stop_ride_polling():
     ride_id = request.json['ride_id']
+    latitude = request.json['latitude']
+    longitude = request.json['longitude']
+    print "latitute: ", latitude
+    print "longitude: ", longitude
     db = sqlite3.connect("file::memory:?cache=shared",
                             check_same_thread=False)
     cur = db.cursor()
+
+    cur.execute("SELECT * FROM rides where id = ?", (ride_id, ))
+    ride = cur.fetchone()
+    cycle_id = ride[1]
+
+    if latitude != ride[8] or longitude != ride[9] :        
+        cur.execute("UPDATE rides SET latitude = ?, longitude = ? WHERE id = ?", 
+                (latitude, longitude, ride_id, ))
+        if latitude != -1 or longitude != -1:
+            file = open("gps_data/cycle" + str(cycle_id) + ".txt", "a")
+            file.write("{0},{1}\n".format(longitude, latitude))    
+            file.close()
+    
     cur.execute("SELECT * FROM rides where id = ? AND status != 1", (ride_id, ))
     ride = cur.fetchone()
+    db.commit()
     if ride:
         return json.dumps({'success': True})
         
