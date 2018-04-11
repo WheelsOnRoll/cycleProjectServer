@@ -12,7 +12,7 @@ monkey.patch_all()
 
 auth = HTTPDigestAuth()
 
-app.config['SECRET_KEY'] = 'Cycle Project Mentor: Akshay Revankar'
+app.config['SECRET_KEY'] = 'Cycle Project: Wheels On Roll'
 
 # Database Variables
 DATABASE = 'file::memory:?cache=shared'
@@ -43,8 +43,6 @@ def event_stream(cycle_id):
             cur.execute("SELECT * FROM rides WHERE cycle_id = ? and status = ?", id)
             ride = cur.fetchone()
 
-            # print("Init ride", ride)
-
             # when there is new entry with current id
             if ride != None:
                 ride_id = ride[0]
@@ -56,8 +54,6 @@ def event_stream(cycle_id):
                 cur.execute("SELECT * FROM users WHERE id = ? ", user_id)
                 user = cur.fetchone()
                 rfid_no = user[4]
-
-                # print(user)
 
                 # TODO: store the ride id as var
 
@@ -174,7 +170,6 @@ def qr_code():
 
     cur.execute("select * from rides where start_time = ?", (current_time,))
     ride = cur.fetchone()
-
 
     return json.dumps({'success': True, 'ride_id': ride[0]})
 
@@ -303,8 +298,10 @@ def stop_ride_polling():
     ride_id = request.json['ride_id']
     latitude = request.json['latitude']
     longitude = request.json['longitude']
-    print "latitute: ", latitude
-    print "longitude: ", longitude
+
+    print("latitute: ", latitude)
+    print("longitude: ", longitude)
+
     db = sqlite3.connect("file::memory:?cache=shared",
                             check_same_thread=False)
     cur = db.cursor()

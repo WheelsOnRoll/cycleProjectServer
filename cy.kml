@@ -1,0 +1,44 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Path</name>
+    <Style id="yellowLineGreenPoly">
+      <LineStyle>
+        <color>7f00ffff</color>
+        <width>4</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>7f00ff00</color>
+      </PolyStyle>
+    </Style>
+    <Placemark>
+      <name>File: gps_data/cycle1.txt</name>
+      <styleUrl>#yellowLineGreenPoly</styleUrl>
+      <LineString>
+        <extrude>1</extrude>
+        <tessellate>1</tessellate>
+        <altitudeMode>absolute</altitudeMode>
+        <coordinates>
+ 74.7945969,13.0110583,0
+ 74.7947893,13.0103037,0
+ 74.79478934,13.01030373,0
+ 74.7947893,13.0103037,0
+ 74.79478934,13.01030373,0
+ 74.7947893,13.0103037,0
+ 74.7945969,13.0128081,0
+
+        </coordinates>
+      </LineString>
+    </Placemark>
+    <Placemark>
+      <name>Current Location</name>
+      <Point>
+        <coordinates>
+           74.7945969,13.0128081,0
+
+        </coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>
