@@ -311,9 +311,10 @@ def stop_ride_polling():
     cycle_id = ride[1]
 
     if latitude != ride[8] or longitude != ride[9] :        
-        cur.execute("UPDATE rides SET latitude = ?, longitude = ? WHERE id = ?", 
-                (latitude, longitude, ride_id, ))
         if latitude != -1 or longitude != -1:
+            cur.execute("UPDATE rides SET latitude = ?, longitude = ? WHERE id = ?", 
+                (latitude, longitude, ride_id, ))
+            # Write location to file
             file = open("gps_data/cycle" + str(cycle_id) + ".txt", "a")
             file.write("{0},{1}\n".format(longitude, latitude))    
             file.close()
@@ -323,7 +324,17 @@ def stop_ride_polling():
     db.commit()
     if ride:
         return json.dumps({'success': True})
-        
+
+    return json.dumps({'success': False})    
+
+
+@app.route('/dump_location', methods=['POST'])
+def dump_location():
+    ride_id = request.json['ride_id']
+    location_data = request.json['location_data']
+    file = open("gps_data/ride" + str(ride_id) + ".txt", "w")
+    file.write(location_data)
+    file.close()
     return json.dumps({'success': False})    
 
 
