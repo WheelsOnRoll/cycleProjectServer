@@ -366,6 +366,13 @@ def get_pw(username):
         return users.get(username)
     return None
 
+
+@app.route('/about')
+@auth.login_required
+def about():
+    return render_template('about.html', name='Cycle Project - About')
+
+
 @app.route('/')
 @auth.login_required
 def index():

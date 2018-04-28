@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Cycle Project</title>
+    <title>Cycle Project - About</title>
     <!-- Compiled and minified CSS -->
     <!-- Load Core Materialize CSS  -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/css/materialize.min.css">
@@ -10,8 +10,9 @@
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/js/materialize.min.js"></script>    
-    <script type="text/javascript" src="/static/js/script.js"></script>
+    <script type="text/javascript" src="/static/js/about.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script type="text/javascript" src="/static/js/about.json"></script>
 
 </head>
 <body>
@@ -23,10 +24,10 @@
                     <img class="responsive-img" src="/static/img/logo.png" style="height: 60px;">
                 </a>
                 <ul id="nav-mobile" class="left hide-on-med-and-down">
-                    <li class="active">
+                    <li>
                         <a href="/">Home</a>
                     </li>
-                    <li>
+                    <li  class="active">
                         <a href="/about">About</a>
                     </li>
                 </ul>
@@ -37,21 +38,15 @@
     </header>
 
     <main>
-        <!-- Not Approved Users -->
         <div class="container">
-            <h2 class="flow-text"> Users Not Approved</h2>
+            <h2 class="pt-sans">Team</h2>
+            <hr>
 
-            <div class="users-not-approved-container center" id="users_not_approved">
+            <div class="row flow-text">
+                <div id="team-container" class="row"></div>
             </div>
         </div>
 
-        <!-- Approved Users -->
-        <div class="container">
-            <h2 class="flow-text"> Users Approved</h2>
-
-            <div class="users-approved-container center" id="users_approved">
-            </div>
-        </div>
 
     </main>
 

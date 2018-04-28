@@ -35,3 +35,30 @@ main {
   font-size: 20px;
   text-align: center;
 }
+
+.member-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /*padding: 10px;*/
+}
+
+.member-image {
+  padding-top: 10px; 
+  border-radius: 50%;
+  height: 150px;
+  width: 150px;
+  align-self: center; 
+}
+
+.member-name {
+  padding-top: 10px;
+  align-self: center;
+  text-align: center;
+}
+
+.member-department {
+  padding-bottom: 10px;
+  align-self: center;
+  text-align: center;
+}

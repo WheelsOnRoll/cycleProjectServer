@@ -1,0 +1,37 @@
+var team = [
+{
+	"name": "Salman Shah",
+	"image": "salman-shah.jpg",
+	"department": "Information Technology",
+},
+{
+	"name": "Hrishi Hiraskar",
+	"image": "hrishi-hiraskar.jpg",
+	"department": "Computer Science",
+},
+{
+	"name": "Pratyush Giri",
+	"image": "pratyush-giri.jpg",
+	"department": "Mechanical Engineering",
+},
+{
+	"name": "Amartya Gupta",
+	"image": "amartya-gupta.jpg",
+	"department": "Mechanical Engineering",
+},
+{
+	"name": "Mohiitaa Chowdhury",
+	"image": "mohiitaa-chowdhury.jpg",
+	"department": "Electronics and Communication",
+},
+{
+	"name": "Santosh Kodali",
+	"image": "santosh-kodali.jpg",
+	"department": "Electronics and Communication",
+},
+{
+	"name": "Jeshventh Raja",
+	"image": "jeshventh-raja.jpg",
+	"department": "Computer Science",
+}
+]
